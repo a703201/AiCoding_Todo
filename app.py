@@ -589,6 +589,8 @@ def create_app(test_config=None):
                 query = query.filter(Todo.completed == True)
             elif completed.lower() in ("false", "0"):
                 query = query.filter(Todo.completed == False)
+            else:
+                return jsonify({"error": f"completed 参数无效: {completed}（仅接受 true/false/0/1）"}), 400
 
         priority = request.args.get("priority")
         if priority and priority in VALID_PRIORITIES:
@@ -697,6 +699,10 @@ def create_app(test_config=None):
             tag_ids = data.get("tag_ids", [])
             if tag_ids:
                 tags = Tag.query.filter(Tag.id.in_(tag_ids)).all()
+                if len(tags) != len(set(tag_ids)):
+                    found_ids = {t.id for t in tags}
+                    missing = [tid for tid in tag_ids if tid not in found_ids]
+                    return jsonify({"error": f"标签不存在: {missing}"}), 400
                 todo.tags = tags
 
             db.session.commit()
@@ -902,6 +908,10 @@ def create_app(test_config=None):
         tags = Tag.query.filter(Tag.id.in_(tag_ids)).all()
         if not tags:
             return jsonify({"error": "未找到有效标签"}), 404
+        if len(tags) != len(set(tag_ids)):
+            found_ids = {t.id for t in tags}
+            missing = [tid for tid in tag_ids if tid not in found_ids]
+            return jsonify({"error": f"标签不存在: {missing}"}), 400
 
         for tag in tags:
             if tag not in todo.tags:
@@ -944,6 +954,10 @@ def create_app(test_config=None):
         tag_ids = data["tag_ids"]
         if tag_ids:
             tags = Tag.query.filter(Tag.id.in_(tag_ids)).all()
+            if len(tags) != len(set(tag_ids)):
+                found_ids = {t.id for t in tags}
+                missing = [tid for tid in tag_ids if tid not in found_ids]
+                return jsonify({"error": f"标签不存在: {missing}"}), 400
             todo.tags = tags
         else:
             todo.tags = []
@@ -1063,7 +1077,10 @@ def create_app(test_config=None):
 
     @app.errorhandler(500)
     def internal_error(error):
-        db.session.rollback()
+        try:
+            db.session.rollback()
+        except Exception:
+            pass  # session 可能已失效，忽略 rollback 异常
         app.logger.exception("服务器内部错误")
         return jsonify({"error": "服务器内部错误"}), 500
 
