@@ -129,6 +129,8 @@ make health   # 健康检查
 | 监控指标 | http://localhost:5000/metrics |
 | Nginx 代理 | http://localhost:80 |
 
+> ⚠️ **安全提醒**：`docker-compose.yml` 中的数据库密码、Redis 连接和 `SECRET_KEY` 均为默认值，生产部署前请通过 `.env` 文件覆盖。参考 `env.example` 中的环境变量模板。
+
 ---
 
 ## API 接口文档
@@ -324,9 +326,11 @@ curl http://localhost:5000/metrics
 
 2. **数据库设计与操作**
    - 关系型数据建模（一对多、多对多）
-   - Alembic 数据库迁移管理
-   - 复杂查询（聚合、分组、JOIN）
+   - Alembic 数据库迁移管理（正式环境以迁移文件为准）
+   - `init.sql` 仅用于 Docker 首次初始化，需与 Alembic 迁移保持同步
+   - 复杂查询（聚合、分组、JOIN、窗口函数）
    - 索引优化与 SQL 调优
+   - 跨数据库方言差异（SQLite vs PostgreSQL，见 `sql_practice.sql`）
 
 3. **测试驱动开发**
    - pytest Fixture 与参数化测试
