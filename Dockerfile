@@ -5,7 +5,7 @@ WORKDIR /app
 # Python 环境优化
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    FLASK_APP=app.py \
+    FLASK_APP=app:create_app \
     FLASK_ENV=production \
     LOG_LEVEL=INFO \
     LOG_DIR=/app/logs

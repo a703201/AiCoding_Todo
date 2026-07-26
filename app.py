@@ -610,7 +610,9 @@ def create_app(test_config=None):
         # ── 全文搜索（like 模糊匹配标题和描述） ──
         search = request.args.get("search")
         if search and search.strip():
-            pattern = f"%{search.strip()}%"
+            # 转义 LIKE 通配符，防止意外模式匹配
+            escaped = search.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            pattern = f"%{escaped}%"
             query = query.filter(
                 or_(
                     Todo.title.ilike(pattern),
@@ -702,6 +704,7 @@ def create_app(test_config=None):
                 if len(tags) != len(set(tag_ids)):
                     found_ids = {t.id for t in tags}
                     missing = [tid for tid in tag_ids if tid not in found_ids]
+                    db.session.rollback()  # 回滚 savepoint
                     return jsonify({"error": f"标签不存在: {missing}"}), 400
                 todo.tags = tags
 
@@ -712,7 +715,7 @@ def create_app(test_config=None):
 
         invalidate_todo_cache()
 
-        app.logger.info(f"创建待办事项: id={todo.id}, title={todo.title}")
+        app.logger.info(f"创建待办事项: id={todo.id}")
         return jsonify(todo.to_dict()), 201
 
     # ════════════════════════════════════════════
@@ -840,7 +843,11 @@ def create_app(test_config=None):
         if Tag.query.filter(Tag.name == name).first():
             return jsonify({"error": "标签名称已存在"}), 409
 
-        tag = Tag(name=name, color=data.get("color", "#6c757d"))
+        color = data.get("color", "#6c757d")
+        # 校验颜色格式（简单 hex 校验）
+        if not isinstance(color, str) or not color.startswith("#") or len(color) not in (4, 7):
+            return jsonify({"error": "颜色格式无效，请使用 hex 格式如 #6c757d"}), 400
+        tag = Tag(name=name, color=color)
         db.session.add(tag)
         db.session.commit()
 
