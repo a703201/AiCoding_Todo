@@ -18,8 +18,11 @@ mkdir -p "$BACKUP_DIR"
 
 echo "开始备份: $TIMESTAMP"
 
+# 自动检测 Docker Compose 命令
+DOCKER_COMPOSE=$(command -v docker-compose 2>/dev/null || echo "docker compose")
+
 # 备份
-docker-compose exec -T db pg_dump -U todo_user -d todo_db | gzip > "$BACKUP_DIR/$COMPRESSED" 2>/dev/null || {
+$DOCKER_COMPOSE exec -T db pg_dump -U todo_user -d todo_db | gzip > "$BACKUP_DIR/$COMPRESSED" 2>/dev/null || {
     echo "备份失败！请确认 Docker 服务正在运行。"
     exit 1
 }

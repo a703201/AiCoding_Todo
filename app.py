@@ -126,6 +126,12 @@ def get_redis():
             return None
     return redis_client
 
+def invalidate_todo_cache():
+    """失效待办列表缓存（写操作后调用）。"""
+    r = get_redis()
+    if r:
+        r.delete("todos:list")
+
 
 def increment_visit_stat(endpoint):
     """记录 API 调用热度统计。"""
@@ -698,9 +704,7 @@ def create_app(test_config=None):
             db.session.rollback()
             raise
 
-        r = get_redis()
-        if r:
-            r.delete("todos:list")
+        invalidate_todo_cache()
 
         app.logger.info(f"创建待办事项: id={todo.id}, title={todo.title}")
         return jsonify(todo.to_dict()), 201
@@ -751,9 +755,7 @@ def create_app(test_config=None):
         todo.updated_at = datetime.utcnow()
         db.session.commit()
 
-        r = get_redis()
-        if r:
-            r.delete("todos:list")
+        invalidate_todo_cache()
 
         app.logger.info(f"更新待办事项: id={todo.id}")
         return jsonify(todo.to_dict())
@@ -769,9 +771,7 @@ def create_app(test_config=None):
         db.session.delete(todo)
         db.session.commit()
 
-        r = get_redis()
-        if r:
-            r.delete("todos:list")
+        invalidate_todo_cache()
 
         app.logger.info(f"删除待办事项: id={todo_id}")
         return jsonify({"message": "待办事项已删除"})
@@ -788,9 +788,7 @@ def create_app(test_config=None):
         todo.updated_at = datetime.utcnow()
         db.session.commit()
 
-        r = get_redis()
-        if r:
-            r.delete("todos:list")
+        invalidate_todo_cache()
 
         return jsonify(todo.to_dict())
 
@@ -805,9 +803,7 @@ def create_app(test_config=None):
         deleted_count = Todo.query.filter(Todo.completed == True).delete()
         db.session.commit()
 
-        r = get_redis()
-        if r:
-            r.delete("todos:list")
+        invalidate_todo_cache()
 
         app.logger.info(f"批量删除已完成事项: {deleted_count} 条")
         return jsonify({"message": f"已删除 {deleted_count} 条已完成事项", "deleted_count": deleted_count})
@@ -914,9 +910,7 @@ def create_app(test_config=None):
         todo.updated_at = datetime.utcnow()
         db.session.commit()
 
-        r = get_redis()
-        if r:
-            r.delete("todos:list")
+        invalidate_todo_cache()
 
         return jsonify(todo.to_dict())
 
@@ -934,9 +928,7 @@ def create_app(test_config=None):
         todo.updated_at = datetime.utcnow()
         db.session.commit()
 
-        r = get_redis()
-        if r:
-            r.delete("todos:list")
+        invalidate_todo_cache()
 
         return jsonify(todo.to_dict())
 
@@ -959,9 +951,7 @@ def create_app(test_config=None):
         todo.updated_at = datetime.utcnow()
         db.session.commit()
 
-        r = get_redis()
-        if r:
-            r.delete("todos:list")
+        invalidate_todo_cache()
 
         return jsonify(todo.to_dict())
 

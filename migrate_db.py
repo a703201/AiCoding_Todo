@@ -14,7 +14,7 @@
 import os
 import sys
 
-os.environ.setdefault("FLASK_APP", "app:app")
+os.environ.setdefault("FLASK_APP", "app:create_app")
 
 from flask_migrate import (
     init, migrate, upgrade, downgrade,
