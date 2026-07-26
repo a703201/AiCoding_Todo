@@ -354,4 +354,6 @@ curl http://localhost:5000/metrics
 
 ## 许可证
 
+本项目采用 [MIT License](LICENSE)，允许自由使用、修改和分发。
+
 本项目为 **AiCoding 实训教学项目**，仅供学习参考。
