@@ -185,10 +185,12 @@ todo_tags = db.Table(
     db.Column("todo_id", db.Integer, db.ForeignKey("todos.id", ondelete="CASCADE"), primary_key=True),
     db.Column("tag_id", db.Integer, db.ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True),
     db.Column("assigned_at", db.DateTime, default=datetime.utcnow),
-    # 复合索引加速反向查询（查找使用某标签的所有待办）
-    Index("ix_todo_tags_todo_id", "todo_id"),
-    Index("ix_todo_tags_tag_id", "tag_id"),
 )
+
+# 关联表索引（在 Table 对象创建后单独定义，确保 SQLAlchemy 正确处理）
+# 注意：Alembic 迁移和 init.sql 中也已定义对应索引
+db.Index("ix_todo_tags_todo_id", todo_tags.c.todo_id)
+db.Index("ix_todo_tags_tag_id", todo_tags.c.tag_id)
 
 
 # ──────────────────────────────────────────────
@@ -823,10 +825,29 @@ def create_app(test_config=None):
 
     @app.route("/api/tags", methods=["GET"])
     def get_tags():
-        """获取所有标签（含待办事项计数）。"""
+        """获取所有标签（含待办事项计数，批量聚合避免 N+1）。"""
         increment_visit_stat("tags_list")
         tags = Tag.query.order_by(Tag.name).all()
-        return jsonify([tag.to_dict() for tag in tags])
+
+        # 一次聚合查询获取所有标签的 todo 计数，避免 N+1
+        from sqlalchemy import func as sa_func
+        counts = dict(
+            db.session.query(todo_tags.c.tag_id, sa_func.count(todo_tags.c.todo_id))
+            .group_by(todo_tags.c.tag_id)
+            .all()
+        )
+
+        result = []
+        for tag in tags:
+            d = {
+                "id": tag.id,
+                "name": tag.name,
+                "color": tag.color,
+                "created_at": tag.created_at.isoformat() if tag.created_at else None,
+                "todo_count": counts.get(tag.id, 0),
+            }
+            result.append(d)
+        return jsonify(result)
 
     @app.route("/api/tags", methods=["POST"])
     def create_tag():

@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# 测试与覆盖率
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+.tox/
+
+# 虚拟环境
+venv/
+.venv/
+env/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# 日志与备份
+logs/
+backups/
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 文档
+README.md
+LICENSE
+AICODING_TRAINING_GUIDE.md
+
+# 临时文件
+*.tmp
+*.log
