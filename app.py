@@ -1,7 +1,8 @@
 import logging
 import os
+import threading
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from logging.handlers import TimedRotatingFileHandler
 
 import redis as redis_lib
@@ -108,22 +109,26 @@ def setup_logging(app):
 
 # 哨兵值：标记 Redis 不可用（避免使用 False 作为哨兵）
 _redis_unavailable = object()
+_redis_lock = threading.Lock()
 
 def get_redis():
-    """获取 Redis 客户端（懒初始化）。"""
+    """获取 Redis 客户端（懒初始化，线程安全）。"""
     global redis_client
     if redis_client is _redis_unavailable:
         return None
     if redis_client is None:
-        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        try:
-            redis_client = redis_lib.from_url(redis_url, socket_connect_timeout=2, decode_responses=True)
-            redis_client.ping()
-            logging.getLogger(__name__).info("Redis 连接成功")
-        except Exception as e:
-            logging.getLogger(__name__).warning(f"Redis 不可用，缓存功能将禁用: {e}")
-            redis_client = _redis_unavailable
-            return None
+        with _redis_lock:
+            # 双重检查锁定（防止多线程重复初始化）
+            if redis_client is None:
+                redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+                try:
+                    redis_client = redis_lib.from_url(redis_url, socket_connect_timeout=2, decode_responses=True)
+                    redis_client.ping()
+                    logging.getLogger(__name__).info("Redis 连接成功")
+                except Exception as e:
+                    logging.getLogger(__name__).warning(f"Redis 不可用，缓存功能将禁用: {e}")
+                    redis_client = _redis_unavailable
+                    return None
     return redis_client
 
 def invalidate_todo_cache():
@@ -149,7 +154,8 @@ def get_hot_stats():
     if not r:
         return {}
     today = datetime.utcnow().strftime("%Y-%m-%d")
-    keys = r.keys(f"stats:*:{today}")
+    # 使用 SCAN 代替 KEYS（避免阻塞生产 Redis）
+    keys = list(r.scan_iter(f"stats:*:{today}"))
     stats = {}
     for key in keys:
         endpoint = key.decode() if isinstance(key, bytes) else key
@@ -880,8 +886,15 @@ def create_app(test_config=None):
         """查询单个标签及其关联的待办事项。"""
         increment_visit_stat("tags_detail")
         tag = Tag.query.get_or_404(tag_id)
-        result = tag.to_dict()
-        result["todos"] = [t.to_dict(include_tags=False) for t in tag.todos.all()]
+        todos = tag.todos.all()
+        result = {
+            "id": tag.id,
+            "name": tag.name,
+            "color": tag.color,
+            "created_at": tag.created_at.isoformat() if tag.created_at else None,
+            "todo_count": len(todos),
+            "todos": [t.to_dict(include_tags=False) for t in todos],
+        }
         return jsonify(result)
 
     @app.route("/api/tags/<int:tag_id>", methods=["PUT"])
@@ -904,7 +917,10 @@ def create_app(test_config=None):
             tag.name = name
 
         if "color" in data:
-            tag.color = data["color"]
+            color = data["color"]
+            if not isinstance(color, str) or not color.startswith("#") or len(color) not in (4, 7):
+                return jsonify({"error": "颜色格式无效，请使用 hex 格式如 #6c757d"}), 400
+            tag.color = color
 
         db.session.commit()
         return jsonify(tag.to_dict())
@@ -1008,15 +1024,16 @@ def create_app(test_config=None):
 
         with db.engine.connect() as conn:
             # 1) 按天分组统计创建量（最近 7 天）
+            seven_days_ago = datetime.utcnow() - timedelta(days=7)
             daily_created = conn.execute(text("""
                 SELECT
                     DATE(created_at) AS day,
                     COUNT(*) AS cnt
                 FROM todos
-                WHERE created_at >= date('now', '-7 days')
+                WHERE created_at >= :seven_days_ago
                 GROUP BY DATE(created_at)
                 ORDER BY day
-            """)).fetchall()
+            """), {"seven_days_ago": seven_days_ago}).fetchall()
 
             # 2) 按优先级分布
             priority_dist = conn.execute(text("""
