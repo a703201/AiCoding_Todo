@@ -13,7 +13,6 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from datetime import datetime
 
 # revision identifiers
 revision: str = "002_add_tags"

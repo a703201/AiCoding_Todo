@@ -106,9 +106,14 @@ def setup_logging(app):
 # Redis 缓存辅助
 # ──────────────────────────────────────────────
 
+# 哨兵值：标记 Redis 不可用（避免使用 False 作为哨兵）
+_redis_unavailable = object()
+
 def get_redis():
     """获取 Redis 客户端（懒初始化）。"""
     global redis_client
+    if redis_client is _redis_unavailable:
+        return None
     if redis_client is None:
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
         try:
@@ -117,8 +122,9 @@ def get_redis():
             logging.getLogger(__name__).info("Redis 连接成功")
         except Exception as e:
             logging.getLogger(__name__).warning(f"Redis 不可用，缓存功能将禁用: {e}")
-            redis_client = False
-    return redis_client if redis_client is not False else None
+            redis_client = _redis_unavailable
+            return None
+    return redis_client
 
 
 def increment_visit_stat(endpoint):

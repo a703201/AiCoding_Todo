@@ -162,8 +162,9 @@ log_step "部署后检查..."
 
 # 健康检查
 HEALTH_RESP=$(curl -s http://localhost:5000/health)
-log_info "健康状态: $(echo $HEALTH_RESP | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")"
-log_info "数据库状态: $(echo $HEALTH_RESP | python3 -c "import sys,json; print(json.load(sys.stdin)['database'])")"
+PYTHON_BIN=$(command -v python3 || echo "python")
+log_info "健康状态: $(echo $HEALTH_RESP | $PYTHON_BIN -c "import sys,json; print(json.load(sys.stdin)['status'])")"
+log_info "数据库状态: $(echo $HEALTH_RESP | $PYTHON_BIN -c "import sys,json; print(json.load(sys.stdin)['database'])")"
 
 # 服务状态
 log_step "服务状态:"

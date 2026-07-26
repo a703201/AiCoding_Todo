@@ -7,7 +7,7 @@ services:
   todo-app:
     build: .
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000"  # 仅本地访问，通过 Nginx 反向代理对外
     environment:
       # ⚠️ 安全提醒：以下密码为默认值，生产环境请通过 .env 文件覆盖
       - DATABASE_URL=${DATABASE_URL:-postgresql://todo_user:todo_password@db:5432/todo_db}

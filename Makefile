@@ -72,20 +72,23 @@ clean:
 # 构建与部署
 # ──────────────────────────────────────────
 
+# 自动检测 Docker Compose 命令（兼容 v1 和 v2）
+DOCKER_COMPOSE := $(shell command -v docker-compose 2>/dev/null || echo "docker compose")
+
 build:
-	docker-compose build --no-cache
+	$(DOCKER_COMPOSE) build --no-cache
 
 deploy:
 	bash deploy.sh production
 
 stop:
-	docker-compose down
+	$(DOCKER_COMPOSE) down
 
 restart:
-	docker-compose restart
+	$(DOCKER_COMPOSE) restart
 
 logs:
-	docker-compose logs -f --tail=100
+	$(DOCKER_COMPOSE) logs -f --tail=100
 
 # ──────────────────────────────────────────
 # 数据库
@@ -93,23 +96,23 @@ logs:
 
 migrate: upgrade
 upgrade:
-	docker-compose exec todo-app flask db upgrade
+	$(DOCKER_COMPOSE) exec todo-app flask db upgrade
 
 downgrade:
-	docker-compose exec todo-app flask db downgrade
+	$(DOCKER_COMPOSE) exec todo-app flask db downgrade
 
 db-shell:
-	docker-compose exec db psql -U todo_user -d todo_db
+	$(DOCKER_COMPOSE) exec db psql -U todo_user -d todo_db
 
 backup:
 	@timestamp=$$(date +%Y%m%d_%H%M%S); \
 	mkdir -p backups; \
-	docker-compose exec -T db pg_dump -U todo_user -d todo_db > "backups/backup_$$timestamp.sql"; \
+	$(DOCKER_COMPOSE) exec -T db pg_dump -U todo_user -d todo_db > "backups/backup_$$timestamp.sql"; \
 	echo "已备份到: backups/backup_$$timestamp.sql"
 
 restore:
 	@read -p "输入备份文件路径: " backup_file; \
-	docker-compose exec -T db psql -U todo_user -d todo_db < "$$backup_file"; \
+	$(DOCKER_COMPOSE) exec -T db psql -U todo_user -d todo_db < "$$backup_file"; \
 	echo "已恢复: $$backup_file"
 
 # ──────────────────────────────────────────
@@ -120,14 +123,14 @@ health:
 	@curl -s http://localhost:5000/health | python3 -m json.tool || echo "服务不可用"
 	@echo ""
 	@echo "Docker 状态:"
-	@docker-compose ps
+	@$(DOCKER_COMPOSE) ps
 
 shell:
-	docker-compose exec todo-app /bin/bash
+	$(DOCKER_COMPOSE) exec todo-app /bin/bash
 
 redis-cli:
-	docker-compose exec redis redis-cli
+	$(DOCKER_COMPOSE) exec redis redis-cli
 
 stats:
 	@echo "容器资源使用:"
-	@docker stats --no-stream $$(docker-compose ps -q) 2>/dev/null || echo "没有运行中的容器"
+	@docker stats --no-stream $$($(DOCKER_COMPOSE) ps -q) 2>/dev/null || echo "没有运行中的容器"
