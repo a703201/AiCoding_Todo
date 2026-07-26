@@ -298,7 +298,9 @@
                     if (!response.ok) {
                         throw new Error(`服务器返回 ${response.status}`);
                     }
-                    this.todos = await response.json();
+                    const responseData = await response.json();
+                    this.todos = responseData.data || [];
+                    this.pagination = responseData.pagination || {};
                     this.renderTodos();
                 } catch (error) {
                     console.error('加载待办事项失败:', error);

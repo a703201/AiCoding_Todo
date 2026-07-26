@@ -45,7 +45,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/01-init.sql
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"  # 仅本地访问，不暴露到公网
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U todo_user -d todo_db"]
@@ -60,7 +60,7 @@ services:
     image: redis:6-alpine
     command: redis-server --appendonly yes --maxmemory 64mb --maxmemory-policy allkeys-lru
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"  # 仅本地访问，不暴露到公网
     volumes:
       - redis_data:/data
     restart: unless-stopped

@@ -340,7 +340,11 @@ def create_app(test_config=None):
 
     db.init_app(app)
     migrate.init_app(app, db)
-    CORS(app)
+
+    # CORS 配置：生产环境应限制来源
+    cors_origins = os.getenv("CORS_ORIGINS", "*")
+    origins = cors_origins.split(",") if cors_origins != "*" else "*"
+    CORS(app, origins=origins)
 
     # ════════════════════════════════════════════
     # 页面与健康路由
@@ -1067,13 +1071,6 @@ def create_app(test_config=None):
         app.logger.exception("服务器内部错误")
         return jsonify({"error": "服务器内部错误"}), 500
 
-    # ════════════════════════════════════════════
-    # 数据库初始化
-    # ════════════════════════════════════════════
-
-    with app.app_context():
-        db.create_all()
-
     return app
 
 
@@ -1096,5 +1093,5 @@ if __name__ == "__main__":
             app.logger.error("数据库连接失败，已达最大重试次数")
 
     app.run(debug=True, host="0.0.0.0", port=5000)
-else:
-    app = create_app()
+# 注意：通过 Gunicorn 启动时使用工厂函数 app:create_app()，
+# 不在模块级别实例化 app 以避免副作用（如重复日志初始化）。

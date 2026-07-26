@@ -68,15 +68,15 @@ class TestRedisCaching:
 
         mock_redis.delete.assert_called()
 
-    def test_stats_without_redis(self, mock_redis, client):
-        """Redis 不可用时应优雅降级，stats 仍正常返回。"""
-        create_todo(client, "无缓存统计")
+    def test_stats_with_redis(self, mock_redis, client):
+        """Redis 可用时 stats 返回 redis_available=True。"""
+        create_todo(client, "有缓存统计")
 
         resp = client.get("/api/stats")
         assert resp.status_code == 200
         data = json.loads(resp.data)
         assert data["total_todos"] == 1
-        assert data["redis_available"] is True  # mock_redis_with_cache 返回可用 Redis
+        assert data["redis_available"] is True  # mock_redis 返回可用 Redis
 
 
 # ════════════════════════════════════════════
