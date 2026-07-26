@@ -43,7 +43,14 @@ fi
 log_step "检查依赖..."
 
 command -v docker >/dev/null 2>&1 || { log_error "Docker 未安装"; exit 1; }
-command -v docker-compose >/dev/null 2>&1 || { log_error "Docker Compose 未安装"; exit 1; }
+if command -v docker-compose >/dev/null 2>&1; then
+    DOCKER_COMPOSE="docker-compose"
+elif docker compose version >/dev/null 2>&1; then
+    DOCKER_COMPOSE="docker compose"
+else
+    log_error "Docker Compose 未安装（需要 docker-compose 或 docker compose 插件）"
+    exit 1
+fi
 
 # ──────────────────────────────────────────
 # 环境变量检查
@@ -115,15 +122,15 @@ fi
 
 log_step "停止旧服务..."
 
-docker-compose down --remove-orphans 2>/dev/null || true
+$DOCKER_COMPOSE down --remove-orphans 2>/dev/null || true
 
 log_step "构建镜像..."
 
-docker-compose build --no-cache
+$DOCKER_COMPOSE build --no-cache
 
 log_step "启动服务..."
 
-docker-compose up -d
+$DOCKER_COMPOSE up -d
 
 log_step "等待服务就绪..."
 
@@ -143,7 +150,7 @@ if [[ $RETRY_COUNT -ge $MAX_RETRIES ]]; then
     log_error "应用启动超时"
     echo ""
     log_warn "查看日志："
-    echo "  docker-compose logs todo-app"
+    echo "  $DOCKER_COMPOSE logs todo-app"
     exit 1
 fi
 
@@ -160,7 +167,7 @@ log_info "数据库状态: $(echo $HEALTH_RESP | python3 -c "import sys,json; pr
 
 # 服务状态
 log_step "服务状态:"
-docker-compose ps
+$DOCKER_COMPOSE ps
 
 # ──────────────────────────────────────────
 # 迁移（可选）
@@ -170,7 +177,7 @@ read -p "是否执行数据库迁移？[y/N] " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     log_step "执行数据库迁移..."
-    docker-compose exec todo-app flask db upgrade || log_error "迁移失败"
+    $DOCKER_COMPOSE exec todo-app flask db upgrade || log_error "迁移失败"
     log_info "迁移完成 ✓"
 fi
 
@@ -191,7 +198,7 @@ echo "健康检查："
 echo "  curl http://localhost:5000/health"
 echo ""
 echo "查看日志："
-echo "  docker-compose logs -f"
+echo "  $DOCKER_COMPOSE logs -f"
 echo ""
 echo "停止服务："
-echo "  docker-compose down"
+echo "  $DOCKER_COMPOSE down"

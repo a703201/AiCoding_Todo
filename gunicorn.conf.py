@@ -26,8 +26,9 @@ keepalive = int(os.getenv("GUNICORN_KEEPALIVE", 2))
 worker_connections = int(os.getenv("GUNICORN_WORKER_CONNECTIONS", 1000))
 backlog = int(os.getenv("GUNICORN_BACKLOG", 2048))
 
-# ── 预加载应用（减少内存占用，适用于共享资源少的场景） ──
-preload_app = os.getenv("GUNICORN_PRELOAD_APP", "true").lower() == "true"
+# ── 预加载应用（减少内存占用，但需注意数据库连接池在 fork 后的共享问题） ──
+# 如果使用 PostgreSQL 连接池，建议设为 false
+preload_app = os.getenv("GUNICORN_PRELOAD_APP", "false").lower() == "true"
 
 # ── 最大请求数（防止内存泄漏，处理 N 个请求后重启 worker） ──
 max_requests = int(os.getenv("GUNICORN_MAX_REQUESTS", 10000))

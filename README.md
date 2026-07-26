@@ -144,8 +144,8 @@ make health   # 健康检查
 | `DELETE` | `/api/todos/<id>` | 删除待办事项 |
 | `POST` | `/api/todos/<id>/toggle` | 切换完成状态 |
 | `POST` | `/api/todos/batch/delete-completed` | 批量删除已完成 |
-| `GET` | `/api/todos/stats` | 统计摘要 |
-| `GET` | `/api/todos/dashboard` | 仪表盘数据 |
+| `GET` | `/api/stats` | 统计摘要 |
+| `GET` | `/api/stats/dashboard` | 仪表盘数据 |
 
 ### 标签 (Tags)
 

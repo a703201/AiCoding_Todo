@@ -45,8 +45,6 @@ class TestRedisCaching:
 
     def test_cache_invalidation_on_create(self, mock_redis, client):
         """创建操作应清除列表缓存。"""
-        mock_redis.delete = mock_redis.delete  # ensure it's the mock
-
         create_todo(client, "新任务")
 
         # 验证 delete 被调用（清除缓存）
@@ -78,7 +76,7 @@ class TestRedisCaching:
         assert resp.status_code == 200
         data = json.loads(resp.data)
         assert data["total_todos"] == 1
-        assert data["redis_available"] is True  # mock returns True
+        assert data["redis_available"] is True  # mock_redis_with_cache 返回可用 Redis
 
 
 # ════════════════════════════════════════════

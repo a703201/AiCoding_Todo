@@ -354,7 +354,11 @@ def create_app(test_config=None):
     @app.route("/health")
     def health():
         """增强健康检查：数据库、Redis、磁盘、内存。"""
-        import psutil  # 可选依赖
+        try:
+            import psutil
+        except ImportError:
+            psutil = None
+
         health_data = {"status": "ok"}
 
         # 数据库连通性检查
@@ -401,7 +405,10 @@ def create_app(test_config=None):
     def metrics():
         """Prometheus 兼容的指标端点（文本格式）。"""
         import platform
-        import psutil
+        try:
+            import psutil
+        except ImportError:
+            psutil = None
 
         lines = []
 
@@ -499,8 +506,8 @@ def create_app(test_config=None):
                 FROM todos
                 WHERE completed = FALSE
                   AND due_date IS NOT NULL
-                  AND due_date < datetime('now')
-            """)).scalar()
+                  AND due_date < :now
+            """), {"now": datetime.utcnow()}).scalar()
 
         # 结构化聚合数据
         agg_data = {}
@@ -993,11 +1000,11 @@ def create_app(test_config=None):
                     category,
                     COUNT(*) AS total,
                     SUM(CASE WHEN completed = TRUE THEN 1 ELSE 0 END) AS completed_cnt,
-                    COUNT(CASE WHEN due_date IS NOT NULL AND due_date < datetime('now') AND completed = FALSE THEN 1 END) AS overdue_cnt
+                    COUNT(CASE WHEN due_date IS NOT NULL AND due_date < :now AND completed = FALSE THEN 1 END) AS overdue_cnt
                 FROM todos
                 GROUP BY category
                 ORDER BY total DESC
-            """)).fetchall()
+            """), {"now": datetime.utcnow()}).fetchall()
 
             # 4) 标签使用频率 TOP 10
             top_tags = conn.execute(text("""

@@ -17,6 +17,7 @@ env/
 .idea/
 *.swp
 *.swo
+*~
 
 # Testing & Coverage
 .coverage
@@ -27,11 +28,15 @@ coverage.xml
 # Environment
 .env
 *.env.local
+.env.bak
 
 # Database
 instance/
 *.db
 *.sqlite
+
+# Backups
+backups/
 
 # Logs
 logs/
@@ -39,6 +44,9 @@ logs/
 
 # Docker
 .docker/
+
+# Tutorial
+.tutorial/
 
 # OS
 .DS_Store

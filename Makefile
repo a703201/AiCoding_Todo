@@ -117,7 +117,7 @@ restore:
 # ──────────────────────────────────────────
 
 health:
-	@curl -s http://localhost:5000/health | python -m json.tool || echo "服务不可用"
+	@curl -s http://localhost:5000/health | python3 -m json.tool || echo "服务不可用"
 	@echo ""
 	@echo "Docker 状态:"
 	@docker-compose ps
