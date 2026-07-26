@@ -9,9 +9,10 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - DATABASE_URL=postgresql://todo_user:todo_password@db:5432/todo_db
-      - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=your-secret-key-here
+      # ⚠️ 安全提醒：以下密码为默认值，生产环境请通过 .env 文件覆盖
+      - DATABASE_URL=${DATABASE_URL:-postgresql://todo_user:todo_password@db:5432/todo_db}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
       - FLASK_ENV=production
       - LOG_LEVEL=INFO
       - LOG_DIR=/app/logs
@@ -35,9 +36,10 @@ services:
   db:
     image: postgres:13-alpine
     environment:
-      - POSTGRES_DB=todo_db
-      - POSTGRES_USER=todo_user
-      - POSTGRES_PASSWORD=todo_password
+      # ⚠️ 安全提醒：以下密码为默认值，生产环境请通过 .env 文件覆盖
+      - POSTGRES_DB=${POSTGRES_DB:-todo_db}
+      - POSTGRES_USER=${POSTGRES_USER:-todo_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-todo_password}
       - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
     volumes:
       - postgres_data:/var/lib/postgresql/data

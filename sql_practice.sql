@@ -1,7 +1,19 @@
 -- =============================================
 -- SQL 查询练习：待办事项管理数据库
 -- 学习目标：复杂查询、聚合、窗口函数、子查询
--- 适用数据库：PostgreSQL（部分语法 SQLite 兼容）
+-- =============================================
+-- 注意：本文件混合了 SQLite 和 PostgreSQL 语法，
+--       旨在演示不同数据库的方言差异，请根据实际
+--       使用的数据库选择对应的 SQL 语句。
+--       - datetime('now')        → SQLite
+--       - date('now', '-7 days') → SQLite
+--       - CURRENT_TIMESTAMP      → PostgreSQL
+--       - ROW_NUMBER() OVER()    → PostgreSQL (窗口函数)
+--       - GROUP_CONCAT()         → SQLite (SQLite 3.30+)
+--       - STRING_AGG()           → PostgreSQL 对应函数
+--       - EXPLAIN QUERY PLAN     → SQLite
+--       - EXPLAIN ANALYZE        → PostgreSQL
+-- 项目生产环境使用 PostgreSQL，迁移由 Alembic 管理。
 -- =============================================
 
 -- ════════════════════════════════════════════
