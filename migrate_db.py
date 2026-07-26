@@ -21,7 +21,8 @@ from flask_migrate import (
     history, current, stamp, heads,
 )
 
-from app import create_app, db
+from app import create_app
+from app.extensions import db
 
 
 def main():
@@ -52,7 +53,6 @@ def main():
             print(f"✓ 已回滚到: {rev}")
 
         elif command == "history":
-            # Flask-Migrate 的 history() 输出到控制台
             history(directory="migrations")
 
         elif command == "current":

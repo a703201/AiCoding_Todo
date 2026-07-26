@@ -3,18 +3,19 @@
 - 统一 Fixture 管理
 - Mock 对象支持
 - 测试数据库隔离
+
+适配模块化项目结构（v2: 移除 sys.path.insert hack）。
 """
 import json
 import os
-import sys
 import tempfile
 from unittest.mock import Mock, patch, MagicMock
 
 import pytest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from app import create_app, db as _db, Todo, Tag
+from app import create_app
+from app.extensions import db as _db
+from app.models import Todo, Tag
 
 
 # ════════════════════════════════════════════
@@ -25,11 +26,8 @@ from app import create_app, db as _db, Todo, Tag
 def app():
     """创建测试用 Flask 应用，使用独立 SQLite 数据库。"""
     db_fd, db_path = tempfile.mkstemp(suffix=".db")
-    app = create_app({
-        "TESTING": True,
-        "SQLALCHEMY_DATABASE_URI": f"sqlite:///{db_path}",
-        "SQLALCHEMY_TRACK_MODIFICATIONS": False,
-    })
+    app = create_app("testing")
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
 
     with app.app_context():
         _db.create_all()
@@ -147,11 +145,12 @@ def mock_redis(monkeypatch):
     """Mock Redis 客户端，验证缓存行为。"""
     mock_client = MagicMock()
     mock_client.ping.return_value = True
-    mock_client.get.return_value = None  # 默认缓存未命中
+    mock_client.get.return_value = None
     mock_client.keys.return_value = []
 
-    # Mock Redis 连接
-    monkeypatch.setattr("app.get_redis", lambda: mock_client)
+    monkeypatch.setattr("app.extensions.get_redis", lambda: mock_client)
+    # 同时 mock cache 模块中的 get_redis
+    monkeypatch.setattr("app.utils.cache.get_redis", lambda: mock_client)
     return mock_client
 
 
@@ -168,7 +167,8 @@ def mock_redis_with_cache(monkeypatch):
     mock_client.get.return_value = cached_data
     mock_client.keys.return_value = []
 
-    monkeypatch.setattr("app.get_redis", lambda: mock_client)
+    monkeypatch.setattr("app.extensions.get_redis", lambda: mock_client)
+    monkeypatch.setattr("app.utils.cache.get_redis", lambda: mock_client)
     return mock_client
 
 
@@ -193,12 +193,15 @@ def create_todo(client, title="测试待办", **kwargs):
                        content_type="application/json")
     data = json.loads(resp.data)
 
-    if completed and not data.get("completed"):
+    if completed:
         todo_id = data["id"]
-        if completed:
-            client.post(f"/api/todos/{todo_id}/toggle")
+        toggle_resp = client.post(f"/api/todos/{todo_id}/toggle")
+        if toggle_resp.status_code == 200:
+            data = json.loads(toggle_resp.data)
+            # toggle 返回的 data 可能不含完整字段，统一用 detail 端点获取
             resp2 = client.get(f"/api/todos/{todo_id}")
-            data = json.loads(resp2.data)
+            if resp2.status_code == 200:
+                data = json.loads(resp2.data)
 
     return data, resp.status_code
 

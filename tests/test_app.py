@@ -5,13 +5,11 @@
 import json
 import logging
 import os
-import sys
 
 import pytest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from app import db as _db, Todo, Tag
+from app.extensions import db as _db
+from app.models import Todo, Tag
 from conftest import create_todo, create_tag
 
 
@@ -254,8 +252,10 @@ class TestListTodos:
 
         resp = client.get("/api/todos?sort_by=priority&sort_order=desc")
         data = json.loads(resp.data)["data"]
-        # alphabetical desc: medium, low, high
-        assert data[0]["priority"] == "medium"
+        # 权重排序 desc: low(3) → medium(2) → high(1)
+        assert data[0]["priority"] == "low"
+        assert data[1]["priority"] == "medium"
+        assert data[2]["priority"] == "high"
 
 
 # ════════════════════════════════════════════
@@ -732,7 +732,6 @@ class TestTodoModel:
 
     def test_tag_unique_constraint(self, app):
         """测试标签名称唯一约束。"""
-        import sqlite3
         with app.app_context():
             tag1 = Tag(name="唯一标签")
             _db.session.add(tag1)
@@ -743,8 +742,6 @@ class TestTodoModel:
             with pytest.raises(Exception):
                 _db.session.commit()
 
-
-# ════════════════════════════════════════════
 
 class TestTagModel:
 
@@ -1000,10 +997,8 @@ class TestDeploymentConfig:
     def test_create_app_factory(self):
         """测试应用工厂模式（Gunicorn 入口兼容性）。"""
         from app import create_app
-        app = create_app({
-            "TESTING": True,
-            "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
-        })
+        app = create_app("testing")
+        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
         with app.test_client() as client:
             resp = client.get("/health")
             assert resp.status_code == 200

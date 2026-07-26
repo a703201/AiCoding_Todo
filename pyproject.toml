@@ -1,0 +1,84 @@
+[project]
+name = "aicoding-todo"
+version = "1.4.0"
+description = "待办事项全栈实训项目 — Flask + PostgreSQL + Redis + Docker"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+authors = [
+    { name = "AiCoding Team" },
+]
+keywords = ["flask", "todo", "rest-api", "training"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Flask",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "Flask==2.3.3",
+    "Flask-SQLAlchemy==3.0.5",
+    "Flask-Migrate==4.0.5",
+    "Flask-CORS==4.0.0",
+    "python-dotenv==1.0.0",
+    "gunicorn==21.2.0",
+    "psycopg2-binary==2.9.9",
+    "redis==5.0.1",
+    "python-json-logger==2.0.7",
+    "psutil==5.9.5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==7.4.2",
+    "pytest-cov==4.1.0",
+    "flake8>=6.0",
+    "mypy>=1.0",
+    "types-redis",
+    "types-psutil",
+]
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = { find = { where = ["."], include = ["app*"] } }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+    "--cov=app",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+    "--cov-fail-under=80",
+]
+markers = [
+    "unit: 单元测试",
+    "integration: 集成测试",
+    "mock: Mock 测试",
+    "slow: 慢速测试",
+]
+
+[tool.mypy]
+python_version = "3.9"
+ignore_missing_imports = true
+exclude = ["migrations/", ".tutorial/", "__pycache__/"]
+warn_return_any = false
+warn_unused_configs = true
+
+[tool.flake8]
+max-line-length = 120
+exclude = ["migrations", "__pycache__", ".tutorial", ".venv", "htmlcov"]
+max-complexity = 10

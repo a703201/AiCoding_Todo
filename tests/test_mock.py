@@ -3,12 +3,9 @@ Mock 与模拟对象测试
 覆盖：Redis Mock、外部依赖 Mock、缓存行为验证
 """
 import json
-import sys
 import os
 
 import pytest
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from conftest import create_todo, create_tag
 
